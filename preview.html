@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="/public/logo.png" />
+    <title>TechDraw - AI-Powered Architecture Diagrams</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-light: #3b82f6;
+            --secondary: #1e293b;
+            --accent: #06b6d4;
+            --background: #ffffff;
+            --surface: #f8fafc;
+            --border: #e2e8f0;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+            --gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background: var(--background);
+        }
+
+        /* Header */
+        .header {
+            background: var(--gradient);
+            color: white;
+            padding: 4rem 0 6rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero {
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            line-height: 1.1;
+        }
+
+        .hero .subtitle {
+            font-size: 1.25rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+            font-weight: 300;
+        }
+
+        .hero .description {
+            font-size: 1.1rem;
+            opacity: 0.8;
+            margin-bottom: 3rem;
+            line-height: 1.7;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: white;
+            color: var(--primary);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* Main Content */
+        .main {
+            padding: 0;
+            background: var(--background);
+        }
+
+        /* Demo Section */
+        .demo-section {
+            background: var(--surface);
+            padding: 4rem 0;
+            position: relative;
+            margin-top: -3rem;
+            border-radius: 2rem 2rem 0 0;
+        }
+
+        .demo-container {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .demo-header {
+            background: var(--secondary);
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .demo-dots {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .dot.red { background: #ef4444; }
+        .dot.yellow { background: #eab308; }
+        .dot.green { background: #22c55e; }
+
+        .demo-title {
+            color: white;
+            margin-left: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .demo-content {
+            padding: 2rem;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            overflow: hidden;
+        }
+
+        .demo-carousel {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            margin: 0 auto;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+            background: white;
+        }
+
+        .carousel-track {
+            display: flex;
+            width: 400%;
+            height: 100%;
+            transition: transform 0.5s cubic-bezier(.7,.2,.3,1);
+        }
+
+        .carousel-slide {
+            width: 25%;
+            height: 100%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .carousel-slide img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 0.5rem;
+            box-shadow: var(--shadow);
+        }
+
+        .slide-label {
+            position: absolute;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.9);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 1.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            backdrop-filter: blur(10px);
+            white-space: nowrap;
+        }
+
+        .carousel-indicators {
+            display: flex;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+
+        .indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--border);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .indicator.active {
+            background: var(--primary);
+            transform: scale(1.2);
+        }
+
+        .indicator:nth-child(1) { animation: indicatorPulse 20s infinite 0s; }
+        .indicator:nth-child(2) { animation: indicatorPulse 20s infinite 5s; }
+        .indicator:nth-child(3) { animation: indicatorPulse 20s infinite 10s; }
+        .indicator:nth-child(4) { animation: indicatorPulse 20s infinite 15s; }
+
+        @keyframes infiniteScroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        @keyframes indicatorPulse {
+            0%, 23% { background: var(--border); transform: scale(1); }
+            6%, 19% { background: var(--primary); transform: scale(1.2); }
+            25%, 100% { background: var(--border); transform: scale(1); }
+        }
+
+        .demo-carousel:hover .carousel-track {
+            animation-play-state: paused;
+        }
+
+        /* Features Section */
+        .features-section {
+            padding: 6rem 0;
+            background: var(--background);
+        }
+
+        .section-header {
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto 4rem;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .section-subtitle {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 1rem;
+            box-shadow: var(--shadow);
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 1px solid var(--border);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+            display: block;
+        }
+
+        .feature-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .feature-description {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Tech Stack Section */
+        .tech-section {
+            background: var(--surface);
+            padding: 6rem 0;
+        }
+
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            max-width: 800px;
+            margin: 2rem auto 0;
+        }
+
+        .tech-item {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            text-align: center;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            transition: all 0.2s ease;
+        }
+
+        .tech-item:hover {
+            transform: translateY(-2px);
+        }
+
+        .tech-icon {
+            font-size: 2rem;
+            margin-bottom: 0.75rem;
+            display: block;
+        }
+
+        .tech-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+        }
+
+        /* Stats Section */
+        .stats-section {
+            background: var(--secondary);
+            color: white;
+            padding: 4rem 0;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            text-align: center;
+        }
+
+        .stat-item h3 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-item p {
+            opacity: 0.8;
+            font-size: 1.1rem;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            background: var(--gradient);
+            color: white;
+            padding: 6rem 0;
+            text-align: center;
+        }
+
+        .cta-content {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .cta-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+
+        .cta-description {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 2.5rem;
+            line-height: 1.7;
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--secondary);
+            color: white;
+            padding: 3rem 0 2rem;
+            text-align: center;
+        }
+
+        .footer-content {
+            opacity: 0.7;
+            margin-bottom: 1.5rem;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: white;
+            text-decoration: none;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+
+        .footer-links a:hover {
+            opacity: 1;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 1rem;
+            }
+
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero .subtitle {
+                font-size: 1.1rem;
+            }
+
+            .section-title {
+                font-size: 2rem;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn {
+                width: 100%;
+                max-width: 300px;
+                justify-content: center;
+            }
+
+            .demo-content {
+                padding: 1rem;
+                min-height: 300px;
+            }
+
+            .demo-placeholder {
+                width: 95%;
+                height: 200px;
+            }
+
+            .feature-card,
+            .tech-item {
+                padding: 2rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .footer-links {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .section-title {
+                font-size: 1.75rem;
+            }
+
+            .cta-title {
+                font-size: 2rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stat-item h3 {
+                font-size: 2rem;
+            }
+        }
+
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Animation on scroll */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-on-scroll {
+            animation: fadeInUp 0.6s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="hero">
+                <h1>🎨 TechDraw</h1>
+                <p class="subtitle">AI-Powered System Architecture Diagram Generator</p>
+                <p class="description">
+                    Transform your ideas into professional diagrams with AI assistance. 
+                    Create system architectures, workflows, and technical documentation 
+                    using natural language and intelligent automation.
+                </p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <!-- Demo Section -->
+        <section id="demo" class="demo-section">
+            <div class="container">
+            <div class="demo-container">
+                    <div class="demo-header">
+                        <div class="demo-dots">
+                            <div class="dot red"></div>
+                            <div class="dot yellow"></div>
+                            <div class="dot green"></div>
+                        </div>
+                        <span class="demo-title">TechDraw</span>
+                    </div>
+                    <div class="demo-content">
+                        <div class="demo-carousel" id="demo-carousel">
+                            <div class="carousel-track" id="carousel-track" style="transition: transform 0.4s cubic-bezier(.7,.2,.3,1);">
+                                <div class="carousel-slide">
+                                    <img src="screenshots/homepage.png" alt="TechDraw Homepage" />
+                                </div>
+                                <div class="carousel-slide">
+                                    <img src="screenshots/AI_diagram.png" alt="AI Diagram Generation" />
+                                </div>
+                                <div class="carousel-slide">
+                                    <img src="screenshots/diagram_generated.png" alt="Generated Diagram" />
+                                </div>
+                                <div class="carousel-slide">
+                                    <img src="screenshots/apikeys.png" alt="API Configuration" />
+                                </div>
+                            </div>
+                            <div class="carousel-indicators" id="carousel-indicators">
+                                <div class="indicator"></div>
+                                <div class="indicator"></div>
+                                <div class="indicator"></div>
+                                <div class="indicator"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <script>
+                        // Update carousel styles
+                        // Add minimal padding to make images fit nicely in container
+                        document.querySelector('.demo-content').style.padding = '4px';
+                        document.querySelector('.demo-carousel').style.borderRadius = '8px';
+                        document.querySelector('.demo-carousel').style.height = '550px'; // Increased height from 450px to 550px
+
+                        document.querySelectorAll('.carousel-slide').forEach(slide => {
+                            slide.style.padding = '2px';
+                            slide.style.margin = '0';
+                            slide.style.height = '100%';
+                        });
+
+                        document.querySelectorAll('.carousel-slide img').forEach(img => {
+                            img.style.width = '100%';
+                            img.style.height = '100%';
+                            img.style.objectFit = 'contain'; // Changed to contain to show full image
+                            img.style.borderRadius = '4px';
+                            img.style.boxShadow = 'none';
+                            img.style.margin = '0';
+                            img.style.display = 'block'; // Removes any potential whitespace
+                            img.style.maxHeight = '100%'; // Ensure image doesn't overflow
+                        });
+
+                        // Carousel logic
+                        const track = document.getElementById('carousel-track');
+                        const slides = track.querySelectorAll('.carousel-slide');
+                        const indicators = document.getElementById('carousel-indicators').children;
+                        let current = 0;
+                        let interval;
+
+                        function goToSlide(idx) {
+                            track.style.transform = `translateX(-${idx * 25}%)`;
+                            for (let i = 0; i < indicators.length; i++) {
+                                indicators[i].classList.toggle('active', i === idx);
+                            }
+                        }
+
+                        function nextSlide() {
+                            current = (current + 1) % slides.length;
+                            goToSlide(current);
+                        }
+
+                        function startCarousel() {
+                            interval = setInterval(nextSlide, 2000);
+                        }
+
+                        function stopCarousel() {
+                            clearInterval(interval);
+                        }
+
+                        // Indicator click
+                        Array.from(indicators).forEach((indicator, idx) => {
+                            indicator.addEventListener('click', () => {
+                                stopCarousel();
+                                current = idx;
+                                goToSlide(current);
+                                startCarousel();
+                            });
+                        });
+
+                        // Pause on hover
+                        document.getElementById('demo-carousel').addEventListener('mouseenter', stopCarousel);
+                        document.getElementById('demo-carousel').addEventListener('mouseleave', startCarousel);
+
+                        // Init
+                        goToSlide(current);
+                        startCarousel();
+                    </script>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="features-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">Powerful Features</h2>
+                    <p class="section-subtitle">
+                        Everything you need to create professional system architecture diagrams 
+                        with the power of AI and modern web technologies.
+                    </p>
+                </div>
+                
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <span class="feature-icon">🤖</span>
+                        <h3 class="feature-title">AI-Powered Generation</h3>
+                        <p class="feature-description">
+                            Transform natural language descriptions into professional diagrams 
+                            using OpenAI, Claude, Gemini, and Groq models.
+                        </p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <span class="feature-icon">🎯</span>
+                        <h3 class="feature-title">500+ Technology Icons</h3>
+                        <p class="feature-description">
+                            Comprehensive library of AWS, Azure, Docker, Kubernetes, 
+                            and other technology icons for accurate representations.
+                        </p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <span class="feature-icon">⚡</span>
+                        <h3 class="feature-title">Interactive Editor</h3>
+                        <p class="feature-description">
+                            Drag-and-drop interface with real-time editing, undo/redo, 
+                            and keyboard shortcuts for efficient workflow.
+                        </p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <span class="feature-icon">📤</span>
+                        <h3 class="feature-title">Multiple Export Formats</h3>
+                        <p class="feature-description">
+                            Export diagrams as PNG or SVG for presentations, documentation, 
+                            and integration with other tools.
+                        </p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <span class="feature-icon">🔒</span>
+                        <h3 class="feature-title">Privacy First</h3>
+                        <p class="feature-description">
+                            All diagrams stored locally in your browser. No data collection, 
+                            no tracking, complete privacy and security.
+                        </p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <span class="feature-icon">📱</span>
+                        <h3 class="feature-title">Responsive Design</h3>
+                        <p class="feature-description">
+                            Works seamlessly on desktop and tablet devices with 
+                            touch-optimized controls and responsive layout.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tech Stack Section -->
+        <section class="tech-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">Built with Modern Technologies</h2>
+                    <p class="section-subtitle">
+                        Powered by cutting-edge frameworks and libraries for optimal performance and developer experience.
+                    </p>
+                </div>
+                
+                <div class="tech-grid">
+                    <div class="tech-item">
+                        <span class="tech-icon"><img src="/public/React.png" alt="react" height="52" width="52"></span>
+                        <div class="tech-name">React 19</div>
+                    </div>
+                    <div class="tech-item">
+                        <span class="tech-icon"><img src="/public/TypeScript.png" alt="type script" height="52" width="52"></span>
+                        <div class="tech-name">TypeScript</div>
+                    </div>
+                    <div class="tech-item">
+                        <span class="tech-icon"><img src="/public/Vite.js.png" alt="vite" height="52" width="52"></span>
+                        <div class="tech-name">Vite</div>
+                    </div>
+                    <div class="tech-item">
+                        <span class="tech-icon">🌊</span>
+                        <div class="tech-name">React Flow</div>
+                    </div>
+                    <div class="tech-item">
+                        <span class="tech-icon"><img src="/public/Tailwind-CSS.png" alt="Tailwind-CSS" height="52" width="52"></span>
+                        <div class="tech-name">Tailwind CSS</div>
+                    </div>
+                    <div class="tech-item">
+                        <span class="tech-icon"><img src="/public/api.png" alt="api" height="52" width="52"></span>
+                        <div class="tech-name">Multiple AI APIs</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- CTA Section -->
+        <section class="cta-section">
+            <div class="container">
+                <div class="cta-content">
+                    <h2 class="cta-title">Ready to Start Creating?</h2>
+                    <p class="cta-description">
+                        Join developers and architects who are already using TechDraw 
+                        to create professional system architecture diagrams with AI assistance.
+                    </p>
+                    <div class="cta-buttons">
+                        <a href="https://github.com/SaiDhinakar/TechDraw/README.md" class="btn btn-primary">
+                            <span>📚</span>
+                            <span>Get Started</span>
+                        </a>
+                        <a href="https://github.com/SaiDhinakar/TechDraw" class="btn btn-secondary">
+                            <span>⭐</span>
+                            <span>Star on GitHub</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-links">
+                <a href="https://github.com/SaiDhinakar/TechDraw/README.md">Documentation</a>
+                <a href="https://github.com/SaiDhinakar/TechDraw">GitHub</a>
+                <a href="https://github.com/yourusername/TechDraw/issues">Report Issues</a>
+            </div>
+            <div class="footer-content">
+                <p>&copy; 2025 TechDraw. Open source project.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Intersection Observer for animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('animate-on-scroll');
+                }
+            });
+        }, observerOptions);
+
+        // Observe elements for scroll animations
+        document.querySelectorAll('.feature-card, .tech-item, .stat-item').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Add some interactive hover effects
+        document.querySelectorAll('.feature-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-8px) scale(1.02)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+
+        // Demo interaction
+        const demoPlaceholder = document.querySelector('.demo-placeholder');
+        if (demoPlaceholder) {
+            demoPlaceholder.addEventListener('click', function() {
+                this.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    this.style.transform = 'scale(1)';
+                }, 150);
+            });
+        }
+    </script>
+</body>
+</html>
