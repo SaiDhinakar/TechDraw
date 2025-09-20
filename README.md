@@ -72,8 +72,8 @@ TechDraw is a modern, AI-powered visual diagramming application designed for cre
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/yourusername/techdraw.git
-   cd techdraw
+   git clone https://github.com/SaiDhinakar/TechDraw.git
+   cd TechDraw
    ```
 2. **Install dependencies**
 
@@ -242,4 +242,4 @@ We welcome contributions! Please see our [CONTRIBUTING.md](CONTRIBUTING.md) for 
 
 ## 📧 Support
 
-- **Issues**: Report bugs on [GitHub Issues](https://github.com/yourusername/techdraw/issues)
+- **Issues**: Report bugs on [GitHub Issues](https://github.com/SaiDhinakar/TechDraw/issues)
