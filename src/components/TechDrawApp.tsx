@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Plus, 
-  Settings, 
+import {
+  Plus,
+  Settings,
   Wand2,
   FileText,
   Eye,
@@ -13,8 +13,8 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 import { settingsService } from '../lib/settings';
-import EnhancedDiagramEditor from './EnhancedDiagramEditor';
-import { EnhancedIconLibrary } from './EnhancedIconLibrary';
+import DiagramEditor from './DiagramEditor';
+import { IconLibrary } from './IconLibrary';
 import { AIGenerator } from './AIGenerator';
 import { storageManager, iconManager, type Diagram } from '../lib';
 import type { DiagramGenerationResponse } from '../lib/ai';
@@ -165,7 +165,7 @@ export const TechDrawApp: React.FC = () => {
                   <X size={20} />
                 </button>
               </div>
-              
+
               {/* Tab Navigation */}
               <div className="flex mt-4 bg-gray-100 rounded-lg p-1">
                 {tabs.map(tab => {
@@ -202,10 +202,10 @@ export const TechDrawApp: React.FC = () => {
                   currentDiagram={currentDiagram}
                 />
               )}
-              
+
               {activeTab === 'icons' && (
                 <div className="h-full">
-                  <EnhancedIconLibrary 
+                  <IconLibrary
                     compact={false}
                     onIconSelect={(icon: PublicIcon) => {
                       // Optional: Handle icon selection
@@ -214,11 +214,11 @@ export const TechDrawApp: React.FC = () => {
                   />
                 </div>
               )}
-              
+
               {activeTab === 'ai' && (
                 <AITab onGenerateClick={() => setShowAIGenerator(true)} />
               )}
-              
+
               {activeTab === 'settings' && (
                 <SettingsTab />
               )}
@@ -247,7 +247,7 @@ export const TechDrawApp: React.FC = () => {
               </div>
             )}
           </div>
-          
+
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowAIGenerator(true)}
@@ -269,7 +269,7 @@ export const TechDrawApp: React.FC = () => {
         {/* Editor Area */}
         <div className="flex-1">
           {currentDiagram ? (
-            <EnhancedDiagramEditor
+            <DiagramEditor
               diagram={currentDiagram}
               onSave={saveDiagram}
               onAIModify={(selectedNodes: any) => {
@@ -336,7 +336,7 @@ const DiagramsTab: React.FC<DiagramsTabProps> = ({
           New Diagram
         </button>
       </div>
-      
+
       <div className="flex-1 overflow-y-auto p-4">
         {diagrams.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
@@ -620,7 +620,7 @@ const SettingsTab: React.FC = () => {
               </label>
             </div>
           </div>
-          
+
           <div>
             <h5 className="font-medium mb-2">Editor</h5>
             <div className="space-y-2">
@@ -654,7 +654,7 @@ const WelcomeScreen: React.FC<{ onCreateNew: () => void; onGenerateAI: () => voi
             Create professional flow diagrams with AI assistance or start from scratch
           </p>
         </div>
-        
+
         <div className="space-y-3">
           <button
             onClick={onCreateNew}
@@ -663,7 +663,7 @@ const WelcomeScreen: React.FC<{ onCreateNew: () => void; onGenerateAI: () => voi
             <Plus size={20} />
             Create New Diagram
           </button>
-          
+
           <button
             onClick={onGenerateAI}
             className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700"

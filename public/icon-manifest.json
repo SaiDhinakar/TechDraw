@@ -1,6 +1,6 @@
 {
-  "generated": "2025-09-20T13:23:09.574Z",
-  "totalIcons": 424,
+  "generated": "2025-11-27T03:20:21.557Z",
+  "totalIcons": 428,
   "icons": [
     "AArch64.png",
     "APL.png",
@@ -418,13 +418,17 @@
     "Yuno-Host.png",
     "Zend-Framework.png",
     "Zig.png",
+    "api.png",
+    "diagram-2025-10-05.png",
     "jQuery.png",
+    "minio.png",
     "openSUSE.png",
     "p5-JS.png",
     "pfSense.png",
     "pytest.png",
     "scikit-learn.png",
     "uWSGI.png",
-    "vSphere.png"
+    "vSphere.png",
+    "voice-chat.png"
   ]
 }

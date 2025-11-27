@@ -1,50 +1,42 @@
-import React, { useState, useEffect } from 'react';
-import { useDropzone } from 'react-dropzone';
-import { 
-  Search, 
-  Upload, 
-  Grid3X3, 
-  List, 
-  Filter, 
-  Trash2, 
-  Image as ImageIcon
-} from 'lucide-react';
-import { iconManager, type IconCategory } from '../lib/icons';
-import type { Icon } from '../lib/storage';
-import { formatFileSize, cn } from '../lib/utils';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, Grid3X3, List, RefreshCw, Upload } from 'lucide-react';
+import { publicIconService, type PublicIcon } from '../lib/dynamicIcons';
+import { cn } from '../lib/utils';
 
 interface IconLibraryProps {
-  onIconSelect?: (icon: Icon) => void;
+  onIconDragStart?: (icon: PublicIcon, event: React.DragEvent) => void;
+  onIconSelect?: (icon: PublicIcon) => void;
   selectedIconId?: string;
   compact?: boolean;
 }
 
 export const IconLibrary: React.FC<IconLibraryProps> = ({ 
+  onIconDragStart,
   onIconSelect, 
   selectedIconId,
   compact = false 
 }) => {
-  const [icons, setIcons] = useState<Icon[]>([]);
-  const [categories, setCategories] = useState<IconCategory[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [icons, setIcons] = useState<PublicIcon[]>([]);
+  const [filteredIcons, setFilteredIcons] = useState<PublicIcon[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadIcons();
-    loadCategories();
   }, []);
 
   useEffect(() => {
     filterIcons();
-  }, [selectedCategory, searchQuery]);
+  }, [searchQuery, icons]);
 
   const loadIcons = async () => {
     try {
-      const allIcons = await iconManager.getAllIcons();
+      const allIcons = await publicIconService.getAllIcons();
       setIcons(allIcons);
+      setFilteredIcons(allIcons);
     } catch (error) {
       console.error('Failed to load icons:', error);
     } finally {
@@ -52,64 +44,85 @@ export const IconLibrary: React.FC<IconLibraryProps> = ({
     }
   };
 
-  const loadCategories = () => {
-    const cats = iconManager.getCategories();
-    setCategories(cats);
-  };
-
-  const filterIcons = async () => {
-    try {
-      let filtered: Icon[];
+  const filterIcons = () => {
+    if (!searchQuery.trim()) {
+      setFilteredIcons(icons);
+      return;
+    }
+    
+    const query = searchQuery.toLowerCase().trim();
+    
+    const filtered = icons.filter(icon => {
+      const iconName = icon.name.toLowerCase();
       
-      if (searchQuery) {
-        filtered = await iconManager.searchIcons(searchQuery);
-      } else if (selectedCategory === 'all') {
-        filtered = await iconManager.getAllIcons();
-      } else {
-        filtered = await iconManager.getIconsByCategory(selectedCategory);
+      // Direct match
+      if (iconName.includes(query)) {
+        return true;
       }
       
-      setIcons(filtered);
-    } catch (error) {
-      console.error('Failed to filter icons:', error);
-    }
+      // Try variations with spaces and dashes
+      const queryWithSpaces = query.replace(/-/g, ' ').replace(/_/g, ' ');
+      const queryWithDashes = query.replace(/\s+/g, '-').replace(/_/g, '-');
+      const queryWithUnderscores = query.replace(/\s+/g, '_').replace(/-/g, '_');
+      
+      const nameWithSpaces = iconName.replace(/-/g, ' ').replace(/_/g, ' ');
+      const nameWithDashes = iconName.replace(/\s+/g, '-').replace(/_/g, '-');
+      const nameWithUnderscores = iconName.replace(/\s+/g, '_').replace(/-/g, '_');
+      
+      return nameWithSpaces.includes(queryWithSpaces) ||
+             nameWithDashes.includes(queryWithDashes) ||
+             nameWithUnderscores.includes(queryWithUnderscores) ||
+             iconName.includes(queryWithSpaces) ||
+             iconName.includes(queryWithDashes) ||
+             iconName.includes(queryWithUnderscores);
+    });
+    
+    setFilteredIcons(filtered);
   };
 
-  const handleUpload = async (files: File[]) => {
-    if (!files.length) return;
-    
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
     setUploading(true);
+    
     try {
-      const category = selectedCategory === 'all' ? 'general' : selectedCategory;
-      await iconManager.uploadMultipleIcons(files, category);
-      await loadIcons();
+      // In a real app, you'd upload to a server
+      // For now, just show a message
+      const validFiles = Array.from(files).filter(file => 
+        file.type.startsWith('image/') && 
+        (file.name.endsWith('.png') || file.name.endsWith('.svg') || 
+         file.name.endsWith('.jpg') || file.name.endsWith('.jpeg'))
+      );
+      
+      if (validFiles.length > 0) {
+        alert(`Upload functionality not implemented yet. Would upload ${validFiles.length} icon(s). Please manually add icons to the public/icons folder and refresh.`);
+      } else {
+        alert('Please select valid image files (.png, .svg, .jpg, .jpeg)');
+      }
     } catch (error) {
       console.error('Upload failed:', error);
+      alert('Upload failed. Please try again.');
     } finally {
       setUploading(false);
-    }
-  };
-
-  const handleDeleteIcon = async (iconId: string) => {
-    if (window.confirm('Are you sure you want to delete this icon?')) {
-      try {
-        await iconManager.deleteIcon(iconId);
-        await loadIcons();
-      } catch (error) {
-        console.error('Failed to delete icon:', error);
+      if (event.target) {
+        event.target.value = '';
       }
     }
   };
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop: handleUpload,
-    accept: {
-      'image/png': ['.png'],
-      'image/jpeg': ['.jpg', '.jpeg'],
-      'image/svg+xml': ['.svg']
-    },
-    multiple: true
-  });
+  const handleDragStart = (icon: PublicIcon, event: React.DragEvent) => {
+    // Set data for React Flow drop handling
+    event.dataTransfer.setData('application/reactflow', 'custom');
+    event.dataTransfer.setData('application/icon', JSON.stringify({
+      name: icon.name,
+      path: icon.path,
+      fileName: icon.fileName
+    }));
+    event.dataTransfer.effectAllowed = 'move';
+    
+    onIconDragStart?.(icon, event);
+  };
 
   if (loading) {
     return (
@@ -120,12 +133,41 @@ export const IconLibrary: React.FC<IconLibraryProps> = ({
   }
 
   return (
-    <div className={cn('bg-white rounded-lg shadow-sm border', compact ? 'h-64' : 'h-full')}>
+    <div className={cn('bg-white rounded-lg shadow-sm border h-full flex flex-col')}>
       {/* Header */}
-      <div className="p-4 border-b">
+      <div className="p-4 border-b flex-shrink-0">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Icon Library</h3>
+          <h3 className="text-lg font-semibold">Tech Icons</h3>
           <div className="flex items-center gap-2">
+            <button
+              onClick={async () => {
+                setLoading(true);
+                await publicIconService.refreshIcons();
+                await loadIcons();
+              }}
+              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
+              title="Refresh icons from folder"
+            >
+              <RefreshCw size={16} />
+            </button>
+            <div className="relative">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept=".png,.svg,.jpg,.jpeg"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
+                title="Upload new icons"
+              >
+                <Upload size={16} className={uploading ? 'animate-pulse' : ''} />
+              </button>
+            </div>
             <button
               onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
               className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
@@ -136,7 +178,7 @@ export const IconLibrary: React.FC<IconLibraryProps> = ({
         </div>
 
         {/* Search */}
-        <div className="relative mb-4">
+        <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
           <input
             type="text"
@@ -147,83 +189,53 @@ export const IconLibrary: React.FC<IconLibraryProps> = ({
           />
         </div>
 
-        {/* Category Filter */}
-        <div className="flex items-center gap-2 mb-4 overflow-x-auto">
-          <Filter size={16} className="text-gray-400 flex-shrink-0" />
-          <button
-            onClick={() => setSelectedCategory('all')}
-            className={cn(
-              'px-3 py-1 text-sm rounded-full whitespace-nowrap',
-              selectedCategory === 'all'
-                ? 'bg-primary-100 text-primary-700'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            )}
-          >
-            All Categories
-          </button>
-          {categories.map(category => (
-            <button
-              key={category.id}
-              onClick={() => setSelectedCategory(category.id)}
-              className={cn(
-                'px-3 py-1 text-sm rounded-full whitespace-nowrap',
-                selectedCategory === category.id
-                  ? 'bg-primary-100 text-primary-700'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              )}
-            >
-              {category.name}
-            </button>
-          ))}
-        </div>
-
-        {/* Upload Area */}
-        <div
-          {...getRootProps()}
-          className={cn(
-            'border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors',
-            isDragActive
-              ? 'border-primary-400 bg-primary-50'
-              : 'border-gray-300 hover:border-gray-400'
-          )}
-        >
-          <input {...getInputProps()} />
-          <Upload className="mx-auto mb-2 text-gray-400" size={24} />
-          <p className="text-sm text-gray-600">
-            {uploading
-              ? 'Uploading...'
-              : isDragActive
-              ? 'Drop files here'
-              : 'Drop files or click to upload'}
-          </p>
-          <p className="text-xs text-gray-500 mt-1">
-            Supports PNG, JPG, SVG (max 5MB)
-          </p>
+        <div className="mt-3 text-xs text-gray-500">
+          Drag icons to canvas • {filteredIcons.length} icons available
         </div>
       </div>
 
-      {/* Icon Grid/List */}
-      <div className={cn('p-4 overflow-y-auto', compact ? 'h-48' : 'flex-1')}>
-        {icons.length === 0 ? (
+      {/* Icons Grid/List */}
+      <div className="flex-1 overflow-y-auto p-4">
+        {icons.length === 0 && !loading ? (
+          <div className="text-center py-12">
+            <div className="text-gray-500 mb-4">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+                <Upload className="h-8 w-8 text-gray-400" />
+              </div>
+              <p className="text-lg font-medium">No icons found</p>
+              <p className="text-sm">Add icons to the public/icons folder or use the upload button</p>
+            </div>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600"
+            >
+              <Upload size={16} />
+              Add Icons
+            </button>
+          </div>
+        ) : filteredIcons.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            <ImageIcon className="mx-auto mb-2" size={48} />
-            <p>No icons found</p>
-            <p className="text-sm mt-1">Upload some icons to get started</p>
+            <div className="mb-2">No icons match your search</div>
+            <div className="text-sm">Try a different search term</div>
           </div>
         ) : (
           <div className={cn(
             viewMode === 'grid' 
-              ? 'grid grid-cols-6 gap-3' 
-              : 'space-y-2'
+              ? 'grid gap-3' 
+              : 'space-y-2',
+            compact 
+              ? 'grid-cols-4' 
+              : 'grid-cols-3 lg:grid-cols-4'
           )}>
-            {icons.map(icon => (
+            {filteredIcons.map(icon => (
               <IconItem
                 key={icon.id}
                 icon={icon}
                 viewMode={viewMode}
                 isSelected={selectedIconId === icon.id}
+                onDragStart={(e) => handleDragStart(icon, e)}
                 onSelect={() => onIconSelect?.(icon)}
-                onDelete={() => handleDeleteIcon(icon.id)}
+                compact={compact}
               />
             ))}
           </div>
@@ -234,51 +246,58 @@ export const IconLibrary: React.FC<IconLibraryProps> = ({
 };
 
 interface IconItemProps {
-  icon: Icon;
+  icon: PublicIcon;
   viewMode: 'grid' | 'list';
   isSelected?: boolean;
+  onDragStart?: (event: React.DragEvent) => void;
   onSelect?: () => void;
-  onDelete?: () => void;
+  compact?: boolean;
 }
 
 const IconItem: React.FC<IconItemProps> = ({ 
   icon, 
   viewMode, 
   isSelected = false, 
-  onSelect, 
-  onDelete 
+  onDragStart,
+  onSelect,
+  compact = false
 }) => {
+  const iconSize = compact ? 32 : 48;
+
   if (viewMode === 'grid') {
     return (
       <div
+        draggable
+        onDragStart={onDragStart}
         onClick={onSelect}
         className={cn(
-          'relative group border rounded-lg p-3 cursor-pointer transition-all aspect-square',
+          'relative group border rounded-lg p-3 cursor-grab active:cursor-grabbing transition-all hover:shadow-md',
+          compact ? 'aspect-square' : 'aspect-square',
           isSelected
-            ? 'border-primary-500 bg-primary-50'
+            ? 'border-primary-500 bg-primary-50 shadow-md'
             : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
         )}
+        title={`${icon.name} - Drag to canvas`}
       >
         <div className="w-full h-full flex items-center justify-center">
           <img
-            src={icon.data}
+            src={icon.path}
             alt={icon.name}
             className="max-w-full max-h-full object-contain"
+            style={{ width: iconSize, height: iconSize }}
+            loading="lazy"
           />
         </div>
         
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete?.();
-          }}
-          className="absolute top-1 right-1 p-1 text-red-500 hover:text-red-700 hover:bg-white rounded opacity-0 group-hover:opacity-100 transition-opacity"
-        >
-          <Trash2 size={12} />
-        </button>
-        
-        <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white text-xs p-1 rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity">
-          {icon.name}
+        {!compact && (
+          <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white text-xs p-2 rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="truncate">{icon.name}</div>
+          </div>
+        )}
+
+        {/* Drag indicator */}
+        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
         </div>
       </div>
     );
@@ -286,51 +305,35 @@ const IconItem: React.FC<IconItemProps> = ({
 
   return (
     <div
+      draggable
+      onDragStart={onDragStart}
       onClick={onSelect}
       className={cn(
-        'flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all',
+        'flex items-center gap-3 p-3 border rounded-lg cursor-grab active:cursor-grabbing transition-all hover:shadow-sm',
         isSelected
           ? 'border-primary-500 bg-primary-50'
           : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
       )}
+      title={`${icon.name} - Drag to canvas`}
     >
-      <div className="w-8 h-8 flex items-center justify-center flex-shrink-0">
+      <div className="flex-shrink-0">
         <img
-          src={icon.data}
+          src={icon.path}
           alt={icon.name}
-          className="max-w-full max-h-full object-contain"
+          className="object-contain"
+          style={{ width: iconSize, height: iconSize }}
+          loading="lazy"
         />
       </div>
       
       <div className="flex-1 min-w-0">
         <div className="font-medium text-sm truncate">{icon.name}</div>
-        <div className="flex items-center gap-2 text-xs text-gray-500">
-          <span>{icon.category}</span>
-          <span>•</span>
-          <span>{formatFileSize(icon.size)}</span>
-          <span>•</span>
-          <span className="uppercase">{icon.format}</span>
-        </div>
+        <div className="text-xs text-gray-500 truncate">{icon.fileName}</div>
       </div>
-      
-      <div className="flex items-center gap-1">
-        {icon.tags?.map(tag => (
-          <span
-            key={tag}
-            className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded"
-          >
-            {tag}
-          </span>
-        ))}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete?.();
-          }}
-          className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded ml-2"
-        >
-          <Trash2 size={14} />
-        </button>
+
+      {/* Drag indicator */}
+      <div className="flex-shrink-0 opacity-50">
+        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
       </div>
     </div>
   );
