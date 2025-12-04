@@ -1,38 +1,38 @@
 import React, { useState } from 'react';
-import { 
-  Wand2, 
-  Send, 
-  Loader2, 
-  AlertCircle, 
- 
+import {
+  Wand2,
+  Send,
+  Loader2,
+  AlertCircle,
+
   HelpCircle,
-  Lightbulb 
+  Lightbulb
 } from 'lucide-react';
 import { aiService, AI_PROVIDERS, type DiagramGenerationRequest, type DiagramGenerationResponse } from '../lib/ai';
 import { settingsService } from '../lib/settings';
 import { cn } from '../lib/utils';
 
 interface AIGeneratorProps {
-  onDiagramGenerated: (result: DiagramGenerationResponse) => void;
+  onDiagramGenerated: (result: DiagramGenerationResponse, diagramType?: string) => void;
   onClose: () => void;
 }
 
-export const AIGenerator: React.FC<AIGeneratorProps> = ({ 
-  onDiagramGenerated, 
-  onClose 
+export const AIGenerator: React.FC<AIGeneratorProps> = ({
+  onDiagramGenerated,
+  onClose
 }) => {
   const [description, setDescription] = useState('');
   const [provider, setProvider] = useState<'openrouter' | 'groq' | 'gemini'>('openrouter');
   const [model, setModel] = useState('');
 
-  const [diagramType, setDiagramType] = useState<'container' | 'component' | 'deployment' | 'sequence' | 'flowchart' | 'architecture'>('container');
+  const [diagramType, setDiagramType] = useState<'container' | 'architecture' | 'flowchart'>('container');
   const [complexity, setComplexity] = useState<'simple' | 'medium' | 'complex'>('medium');
   const [includeIcons, setIncludeIcons] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [availableApiKeys, setAvailableApiKeys] = useState<{[key: string]: boolean}>({});
+  const [availableApiKeys, setAvailableApiKeys] = useState<{ [key: string]: boolean }>({});
 
   // Load available API keys on component mount
   React.useEffect(() => {
@@ -44,7 +44,7 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
         gemini: settingsService.hasAPIKey('gemini')
       };
       setAvailableApiKeys(keys);
-      
+
       // Set default provider to first available one
       const firstAvailable = Object.entries(keys).find(([_, hasKey]) => hasKey)?.[0] as 'openrouter' | 'groq' | 'gemini';
       if (firstAvailable) {
@@ -91,7 +91,7 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
       };
 
       const result = await aiService.generateDiagram(request);
-      onDiagramGenerated(result);
+      onDiagramGenerated(result, diagramType);
       onClose();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to generate diagram';
@@ -164,7 +164,7 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
                 <span className="text-xs text-gray-500">
                   {description.length}/500 characters
                 </span>
-                                <button
+                <button
                   onClick={handleGetSuggestions}
                   disabled={!description.trim() || !availableApiKeys[provider]}
                   className="flex items-center gap-2 px-4 py-2 text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-md transition-colors"
@@ -220,11 +220,8 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
                   onChange={(e) => setDiagramType(e.target.value as any)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
-                  <option value="container">Container Diagram</option>
-                  <option value="component">Component Architecture</option>
-                  <option value="deployment">Deployment View</option>
-                  <option value="sequence">Sequence Flow</option>
                   <option value="flowchart">Flowchart</option>
+                  <option value="container">Container Diagram</option>
                   <option value="architecture">System Architecture</option>
                 </select>
               </div>

@@ -19,12 +19,16 @@ class PublicIconService {
     return this.icons;
   }
 
+  addLocalIcon(icon: PublicIcon): void {
+    this.icons.unshift(icon); // Add to beginning
+  }
+
   async searchIcons(query: string): Promise<PublicIcon[]> {
     const allIcons = await this.getAllIcons();
     if (!query.trim()) {
       return allIcons;
     }
-    
+
     const searchTerm = query.toLowerCase();
     return allIcons.filter(icon =>
       icon.name.toLowerCase().includes(searchTerm) ||
@@ -34,24 +38,24 @@ class PublicIconService {
 
   async getIconByName(name: string): Promise<PublicIcon | null> {
     const allIcons = await this.getAllIcons();
-    return allIcons.find(icon => 
+    return allIcons.find(icon =>
       icon.name.toLowerCase() === name.toLowerCase() ||
       icon.fileName.toLowerCase() === name.toLowerCase()
     ) || null;
   }
 
-  private async loadIcons(): Promise<void> {
+  public async loadIcons(): Promise<void> {
     try {
       // Smart approach: discover icons by scanning the actual folder
       const iconFiles = await this.discoverIconsByScanning();
-      
+
       if (iconFiles.length === 0) {
         console.warn('❌ No icons found in /icons folder. Please add icon files (.png, .svg, .jpg, .jpeg) to the public/icons directory.');
         this.icons = [];
       } else {
         this.icons = iconFiles.map((fileName: string, index: number) => {
           const nameWithoutExt = fileName.replace(/\.(png|svg|jpg|jpeg)$/i, '');
-          
+
           return {
             id: `icon-${index + 1}`,
             name: this.formatIconName(nameWithoutExt),
@@ -60,11 +64,11 @@ class PublicIconService {
             category: this.categorizeIcon(nameWithoutExt)
           };
         });
-        
+
         console.log(`✅ Successfully loaded ${this.icons.length} icons from /icons folder`);
         console.log(`📋 Icon categories:`, [...new Set(this.icons.map(icon => icon.category))]);
       }
-      
+
       this.loaded = true;
     } catch (error) {
       console.error('Failed to load icons:', error);
@@ -75,7 +79,7 @@ class PublicIconService {
 
   private async discoverIconsByScanning(): Promise<string[]> {
     console.log('🔍 Discovering icons from the actual /icons folder...');
-    
+
     try {
       // Method 1: Try to fetch the generated manifest (most efficient)
       const icons = await this.loadFromManifest();
@@ -122,11 +126,11 @@ class PublicIconService {
       const response = await fetch('/icons/');
       if (response.ok) {
         const text = await response.text();
-        
+
         // Parse HTML directory listing (common format)
         const iconRegex = /href="([^"]+\.(png|svg|jpg|jpeg))"/gi;
         const matches = Array.from(text.matchAll(iconRegex));
-        
+
         if (matches.length > 0) {
           return matches.map(match => match[1]);
         }
@@ -139,25 +143,25 @@ class PublicIconService {
 
   private async smartIconScanning(): Promise<string[]> {
     console.log('🔍 Starting smart icon scanning...');
-    
+
     // Generate potential icon names based on common patterns
     const commonIcons = this.generateCommonIconPatterns();
     const validIcons: string[] = [];
-    
+
     const batchSize = 30;
     let processed = 0;
 
     for (let i = 0; i < commonIcons.length; i += batchSize) {
       const batch = commonIcons.slice(i, i + batchSize);
       processed += batch.length;
-      
+
       const progressPercent = Math.round((processed / commonIcons.length) * 100);
       console.log(`🔍 Scanning progress: ${progressPercent}% (${validIcons.length} found)`);
-      
+
       const batchResults = await Promise.allSettled(
         batch.map(async (fileName) => {
           try {
-            const response = await fetch(`/icons/${fileName}`, { 
+            const response = await fetch(`/icons/${fileName}`, {
               method: 'HEAD',
               cache: 'force-cache'
             });
@@ -167,15 +171,15 @@ class PublicIconService {
           }
         })
       );
-      
+
       const foundIcons = batchResults
-        .filter((result): result is PromiseFulfilledResult<string> => 
+        .filter((result): result is PromiseFulfilledResult<string> =>
           result.status === 'fulfilled' && result.value !== null
         )
         .map(result => result.value);
-        
+
       validIcons.push(...foundIcons);
-      
+
       // Small delay to prevent overwhelming the server
       if (i + batchSize < commonIcons.length) {
         await new Promise(resolve => setTimeout(resolve, 50));
@@ -222,7 +226,7 @@ class PublicIconService {
     ];
 
     patterns.push(...commonPatterns);
-    
+
     // Remove duplicates and return
     return [...new Set(patterns)];
   }
@@ -237,42 +241,42 @@ class PublicIconService {
 
   private categorizeIcon(fileName: string): string {
     const name = fileName.toLowerCase();
-    
+
     // Programming Languages
     if (name.match(/\b(java|python|javascript|typescript|c\+\+|c#|php|ruby|go|rust|swift|kotlin|scala|dart)\b/)) {
       return 'Programming Languages';
     }
-    
+
     // Frameworks & Libraries
     if (name.match(/\b(react|vue|angular|django|flask|spring|laravel|rails|express|fastapi)\b/)) {
       return 'Frameworks';
     }
-    
+
     // Databases
     if (name.match(/\b(mysql|postgresql|mongodb|redis|elasticsearch|cassandra|sqlite|oracle)\b/)) {
       return 'Databases';
     }
-    
+
     // Cloud & DevOps
     if (name.match(/\b(aws|azure|google|docker|kubernetes|jenkins|terraform|ansible|gitlab)\b/)) {
       return 'Cloud & DevOps';
     }
-    
+
     // Design Tools
     if (name.match(/\b(photoshop|illustrator|figma|sketch|adobe|canva|blender)\b/)) {
       return 'Design Tools';
     }
-    
+
     // Operating Systems
     if (name.match(/\b(linux|windows|macos|ubuntu|debian|centos|arch)\b/)) {
       return 'Operating Systems';
     }
-    
+
     // Development Tools
     if (name.match(/\b(vscode|intellij|eclipse|git|github|npm|yarn|webpack|babel)\b/)) {
       return 'Development Tools';
     }
-    
+
     return 'Other';
   }
 

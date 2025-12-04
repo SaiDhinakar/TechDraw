@@ -19,7 +19,7 @@ export interface DiagramGenerationRequest {
   model?: string;
   options?: {
     includeIcons?: boolean;
-    diagramType?: 'container' | 'component' | 'deployment' | 'sequence' | 'flowchart' | 'architecture';
+    diagramType?: 'container' | 'architecture' | 'flowchart';
     complexity?: 'simple' | 'medium' | 'complex';
   };
 }
@@ -89,7 +89,7 @@ class AIService {
     this.initializeProvider(request.provider, apiKey);
     const availableIcons = await publicIconService.getAllIcons();
     const prompt = this.buildPrompt(request, availableIcons);
-    
+
     try {
       let response: string;
 
@@ -120,11 +120,31 @@ class AIService {
   private buildPrompt(request: DiagramGenerationRequest, availableIcons: any[]): string {
     const { description, options = {} } = request;
     const { diagramType = 'container', complexity = 'medium' } = options;
-    
+
     // Use more icons and prioritize common tech icons
     const allIconNames = availableIcons.map(icon => icon.name);
     const iconList = allIconNames.slice(0, 150).join(', ');
     console.log(`Using ${allIconNames.length} total icons, showing first 150 to AI:`, iconList);
+
+    // Smart Arrow Detection: Check for workflow keywords
+    const workflowKeywords = /workflow|process flow|flowchart|steps|procedure|sequential/i;
+    const isWorkflowType = workflowKeywords.test(description);
+
+    // Get type-specific configuration
+    const typeConfig = this.getDiagramTypeConfig(diagramType);
+
+    // Override animation based on keyword detection (unless it's already forced)
+    let animatedEdges = typeConfig.animated;
+    if (diagramType === 'container' && isWorkflowType) {
+      // If container diagram but description mentions workflow, use solid arrows
+      animatedEdges = false;
+      console.log('Smart Arrow Detection: Detected workflow keywords, using solid arrows');
+    } else if (diagramType === 'container' && !isWorkflowType) {
+      // Standard container with no workflow mention, use animated
+      animatedEdges = true;
+      console.log('Smart Arrow Detection: No workflow keywords, using animated arrows');
+    }
+
     return `
 Task: Generate a professional ${diagramType} diagram based on the given description.
 
@@ -134,11 +154,13 @@ Input:
 - Complexity Level: ${complexity}
 - Available Icons (must use exact names): ${iconList}
 
+${typeConfig.specificInstructions}
+
 Output Requirements:
 - Strictly return JSON only (no markdown, no extra text).
 - Use the exact JSON schema defined below.
 - Each node must have a unique ID, proper position, and use an available icon.
-- Layout must follow container-style, clean architecture rules.
+- Layout must follow ${typeConfig.layoutStyle}.
 
 JSON Schema:
 {
@@ -152,9 +174,9 @@ JSON Schema:
       "data": {
         "title": "Component Name",
         "content": "Brief component role/function",
-        "backgroundColor": "#hexcolor",
-        "borderColor": "#hexcolor",
-        "textColor": "#hexcolor",
+        "backgroundColor": "${typeConfig.colorScheme.background}",
+        "borderColor": "${typeConfig.colorScheme.border}",
+        "textColor": "${typeConfig.colorScheme.text}",
         "iconPath": "/icons/exact-icon-name-from-available-list.png"
       }
     }
@@ -164,9 +186,9 @@ JSON Schema:
       "id": "edge-id",
       "source": "source-node-id",
       "target": "target-node-id",
-      "type": "smoothstep|straight|bezier",
-      "label": "Data flow or relationship",
-      "animated": true|false
+      "type": "${typeConfig.edgeType}",
+      "label": "${typeConfig.edgeLabel}",
+      "animated": ${animatedEdges}
     }
   ],
   "suggestions": [
@@ -178,18 +200,18 @@ JSON Schema:
 Diagram Style Guidelines:
 1. **Node Rules**
    - Use only "custom" node type.
-   - Each node must have a descriptive title and content.
-   - Use appropriate background colors for different component types.
+   - ${typeConfig.nodeRules}
+   - Use appropriate background colors: ${typeConfig.colorScheme.background}
    - Include relevant icons from the available list.
 
 2. **Layout Rules**
-   - Arrange components in clear tiers: top-to-bottom or left-to-right.
+   - ${typeConfig.layoutRules}
    - Minimum spacing: 200px between nodes, 300px between layers.
    - Use consistent alignment and distribution.
 
 3. **Edge Rules**
-   - Show clear, labeled relationships with animated edges.
-   - Use "smoothstep" for logical data flows unless otherwise required.
+   - ${typeConfig.edgeRules}
+   - ${typeConfig.animated ? 'Use animated edges to show flow' : 'Use solid edges (NO animation)'}
    - No orphan nodes; all must connect logically.
 
 4. **Complexity Rules**
@@ -208,14 +230,82 @@ Final Instruction:
 `;
   }
 
-//   private getNodeCount(complexity: string): string {
-//     switch (complexity) {
-//       case 'simple': return '3-5';
-//       case 'medium': return '5-8';
-//       case 'complex': return '8-15';
-//       default: return '5-8';
-//     }
-//   }
+  private getDiagramTypeConfig(type: string) {
+    const configs: Record<string, any> = {
+      flowchart: {
+        specificInstructions: `FLOWCHART SPECIFIC RULES:
+- Use simple, clean node styling with minimal decoration
+- Nodes should flow top-to-bottom or left-to-right
+- Use only solid, straight edges - ABSOLUTELY NO ANIMATION
+- Include decision points (diamond shapes can be simulated with styling)
+- Keep icons simple and minimal`,
+        layoutStyle: 'top-to-bottom or left-to-right flow with clear progression',
+        layoutRules: 'Arrange in a clear sequential flow from start to end. Group related steps together. Use vertical or horizontal alignment.',
+        nodeRules: 'Each node represents a step or decision. Use simple, clean styling. Minimal decoration.',
+        edgeType: 'straight',
+        edgeRules: 'Use solid, straight arrows showing direction of flow. Label each edge with action or condition.',
+        edgeLabel: 'Action or condition',
+        animated: false,
+        colorScheme: {
+          background: '#f0f9ff',
+          border: '#3b82f6',
+          text: '#1e40af'
+        }
+      },
+      container: {
+        specificInstructions: `CONTAINER DIAGRAM SPECIFIC RULES:
+- Use large boxes representing containers/systems
+- IMPORTANT: Show grouped stacks within containers (multiple components per container)
+- Each container can hold multiple services/components
+- Use clear visual grouping for stacks within containers
+- Edges can be animated to show data flow
+- Use professional blue/gray color scheme`,
+        layoutStyle: 'grouped by containers with nested stacks inside',
+        layoutRules: 'Group components into containers. Show container boundaries clearly. Nest multiple stacks/services within each container.',
+        nodeRules: 'Each node is either a container (large box) or a service/stack within a container. Show hierarchy and grouping.',
+        edgeType: 'smoothstep',
+        edgeRules: 'Use smoothstep edges between containers and services. Show clear data/message flow between components.',
+        edgeLabel: 'Data flow or API call',
+        animated: true,
+        colorScheme: {
+          background: '#ffffff',
+          border: '#6b7280',
+          text: '#1f2937'
+        }
+      },
+      architecture: {
+        specificInstructions: `SYSTEM ARCHITECTURE SPECIFIC RULES:
+- Show high-level system components and their relationships
+- Use HIERARCHICAL layout - top-to-bottom or left-to-right
+- NO CIRCULAR CONNECTIONS - only clear directional flows
+- Show both brief overview and detailed component interactions
+- Use clear, straight edges showing information flow direction`,
+        layoutStyle: 'hierarchical top-to-bottom or left-to-right with clear directional flow',
+        layoutRules: 'Arrange in strict hierarchy. Show clear information flow from sources to sinks. NO circular dependencies or connections.',
+        nodeRules: 'Each node is a major subsystem or component. Show clear boundaries and responsibilities. Use large, prominent boxes.',
+        edgeType: 'straight',
+        edgeRules: 'Use only straight edges with clear directional arrows. Show unidirectional data/control flow. Label with data type or protocol.',
+        edgeLabel: 'Data or control flow',
+        animated: false,
+        colorScheme: {
+          background: '#f0fdfa',
+          border: '#14b8a6',
+          text: '#134e4a'
+        }
+      }
+    };
+
+    return configs[type] || configs.container;
+  }
+
+  //   private getNodeCount(complexity: string): string {
+  //     switch (complexity) {
+  //       case 'simple': return '3-5';
+  //       case 'medium': return '5-8';
+  //       case 'complex': return '8-15';
+  //       default: return '5-8';
+  //     }
+  //   }
 
 
 
@@ -266,17 +356,17 @@ Final Instruction:
       const jsonMatch = response.match(/\{[\s\S]*\}/);
       const jsonString = jsonMatch ? jsonMatch[0] : response;
       console.log('JSON String to parse:', jsonString);
-      
+
       const parsed = JSON.parse(jsonString);
       console.log('Parsed JSON:', parsed);
 
       // Validate and ensure required fields for professional container diagrams
       const nodes: any[] = [];
-      
+
       (parsed.nodes || []).forEach((node: any, index: number) => {
         const nodeId = node.id || generateId();
         const position = node.position || { x: (index % 3) * 300 + 100, y: Math.floor(index / 3) * 200 + 100 };
-        
+
         // Create container node with proper CustomNodeData structure
         const containerNode = {
           id: nodeId,
@@ -293,7 +383,7 @@ Final Instruction:
         };
         nodes.push(containerNode);
       });
-      
+
       const allNodes = nodes;
 
       const edges = (parsed.edges || []).map((edge: any, index: number) => ({
@@ -314,7 +404,7 @@ Final Instruction:
       };
     } catch (error) {
       console.error('Failed to parse AI response:', error);
-      
+
       // Return a fallback simple diagram
       return this.createFallbackDiagram(originalDescription);
     }
@@ -326,7 +416,7 @@ Final Instruction:
         id: 'start-1',
         type: 'custom',
         position: { x: 100, y: 50 },
-        data: { 
+        data: {
           title: 'Start',
           content: 'Starting point'
         },
@@ -335,7 +425,7 @@ Final Instruction:
         id: 'process-1',
         type: 'custom',
         position: { x: 100, y: 150 },
-        data: { 
+        data: {
           title: 'Process',
           content: description,
           backgroundColor: '#ffffff',
@@ -347,7 +437,7 @@ Final Instruction:
         id: 'end-1',
         type: 'custom',
         position: { x: 100, y: 250 },
-        data: { 
+        data: {
           title: 'End',
           content: 'Completion point'
         },
@@ -415,7 +505,7 @@ Format: ["Question 1?", "Question 2?", "Question 3?"]
 
       const jsonMatch = response.match(/\[[\s\S]*\]/);
       const jsonString = jsonMatch ? jsonMatch[0] : response;
-      
+
       return JSON.parse(jsonString);
     } catch (error) {
       console.error('Failed to refine description:', error);

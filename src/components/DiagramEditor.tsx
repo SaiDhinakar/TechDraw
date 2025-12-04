@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useState, useRef } from 'react';
-import { 
-  ReactFlow, 
-  Background, 
-  Controls, 
-  MiniMap, 
-  useNodesState, 
+import {
+  ReactFlow,
+  Background,
+  Controls,
+  MiniMap,
+  useNodesState,
   useEdgesState,
   addEdge,
   Panel,
@@ -38,24 +38,25 @@ interface DiagramEditorProps {
   onAIModify?: (selectedNodes: Node[]) => void;
 }
 
-const DiagramEditor: React.FC<DiagramEditorProps> = ({ 
-  diagram, 
-  onSave, 
+const DiagramEditor: React.FC<DiagramEditorProps> = ({
+  diagram,
+  onSave,
   onDiagramChange,
-  onAIModify 
+  onAIModify
 }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
   const [selectedNodes, setSelectedNodes] = useState<Node[]>([]);
+  const [selectedEdges, setSelectedEdges] = useState<Edge[]>([]);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [isTextEditing, setIsTextEditing] = useState(false);
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
-  
+
   // Context menu state
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId: string } | null>(null);
-  
+
   // Modal states
   const [editModal, setEditModal] = useState<{ isOpen: boolean; nodeData: NodeEditData } | null>(null);
   const [aiModifyModal, setAIModifyModal] = useState<{
@@ -99,7 +100,7 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
       setCanUndo(historyManager.canUndo());
       setCanRedo(historyManager.canRedo());
     }, 1000);
-    
+
     return () => clearTimeout(timer);
   }, [nodes, edges]);
 
@@ -146,7 +147,7 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
           y: node.position.y + 20
         }
       };
-      
+
       saveToHistory();
       setNodes(prevNodes => [...prevNodes, newNode]);
     }
@@ -166,7 +167,7 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
 
     try {
       const nodeData = node.data as unknown as CustomNodeData;
-      
+
       // Create a request for AI modification using generateDiagram
       const modificationRequest = {
         description: `Modify this node: ${nodeData.title} - ${nodeData.content}. User request: ${prompt}`,
@@ -186,22 +187,22 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
 
       // Apply suggestions
       saveToHistory();
-      setNodes(prevNodes => 
-        prevNodes.map(n => 
-          n.id === nodeId 
-            ? { 
-                ...n, 
-                data: { 
-                  ...n.data, 
-                  title: suggestionData?.title || nodeData.title,
-                  content: suggestionData?.content || nodeData.content,
-                  iconPath: suggestionData?.iconPath || nodeData.iconPath
-                } 
+      setNodes(prevNodes =>
+        prevNodes.map(n =>
+          n.id === nodeId
+            ? {
+              ...n,
+              data: {
+                ...n.data,
+                title: suggestionData?.title || nodeData.title,
+                content: suggestionData?.content || nodeData.content,
+                iconPath: suggestionData?.iconPath || nodeData.iconPath
               }
+            }
             : n
         )
       );
-      
+
       setAIModifyModal(null);
     } catch (error) {
       console.error('AI modification failed:', error);
@@ -211,9 +212,9 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
   const handleSaveEditModal = useCallback((data: NodeEditData) => {
     if (editingNodeId) {
       saveToHistory();
-      setNodes(prevNodes => 
-        prevNodes.map(n => 
-          n.id === editingNodeId 
+      setNodes(prevNodes =>
+        prevNodes.map(n =>
+          n.id === editingNodeId
             ? { ...n, data: { ...n.data, ...data } }
             : n
         )
@@ -236,8 +237,8 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
   useEffect(() => {
     const handleUpdateNodeData = (event: CustomEvent) => {
       const { id, data } = event.detail;
-      setNodes(nodes => nodes.map(node => 
-        node.id === id 
+      setNodes(nodes => nodes.map(node =>
+        node.id === id
           ? { ...node, data: { ...node.data, ...data } }
           : node
       ));
@@ -367,7 +368,7 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
 
   const handleSave = () => {
     if (!diagram) return;
-    
+
     const updatedDiagram: Diagram = {
       ...diagram,
       nodes,
@@ -403,8 +404,8 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
     const selectedNodeIds = selectedNodes.map(node => node.id);
     saveToHistory();
     setNodes(nds => nds.filter(node => !selectedNodeIds.includes(node.id)));
-    setEdges(eds => eds.filter(edge => 
-      !selectedNodeIds.includes(edge.source) && 
+    setEdges(eds => eds.filter(edge =>
+      !selectedNodeIds.includes(edge.source) &&
       !selectedNodeIds.includes(edge.target)
     ));
     setSelectedNodes([]);
@@ -413,7 +414,7 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
   // Duplicate selected nodes
   const handleDuplicate = () => {
     if (selectedNodes.length === 0) return;
-    
+
     const duplicatedNodes = selectedNodes.map(node => ({
       ...node,
       id: generateId(),
@@ -423,13 +424,13 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
       },
       selected: false
     }));
-    
+
     saveToHistory();
     setNodes(nodes => [...nodes, ...duplicatedNodes]);
-    
+
     // Select the duplicated nodes
     setTimeout(() => {
-      setNodes(nodes => nodes.map(node => 
+      setNodes(nodes => nodes.map(node =>
         duplicatedNodes.some(dup => dup.id === node.id)
           ? { ...node, selected: true }
           : { ...node, selected: false }
@@ -446,8 +447,8 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
   // Update node text
   const updateNodeText = (nodeId: string, newText: string) => {
     saveToHistory();
-    setNodes(nds => nds.map(node => 
-      node.id === nodeId 
+    setNodes(nds => nds.map(node =>
+      node.id === nodeId
         ? { ...node, data: { ...node.data, title: newText } }
         : node
     ));
@@ -563,7 +564,7 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
             </span>
           )}
         </div>
-        
+
         <div className="flex items-center gap-2">
           {/* History Controls */}
           <button
@@ -574,7 +575,7 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
           >
             <Undo size={14} />
           </button>
-          
+
           <button
             onClick={handleRedo}
             disabled={!canRedo}
@@ -683,7 +684,7 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
           <Background />
           <Controls />
           <MiniMap />
-          
+
           {/*  Info Panel */}
           <Panel position="top-left">
             <div className="bg-white rounded-lg shadow-lg p-3 text-sm max-w-xs">
@@ -697,6 +698,72 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
             </div>
           </Panel>
 
+          {/* Edge Editing Toolbar */}
+          {selectedEdges.length === 1 && (
+            <Panel position="top-center" className="bg-white p-2 rounded-lg shadow-lg border flex items-center gap-3">
+              <span className="text-sm font-medium text-gray-600">Edge:</span>
+
+              {/* Animation Toggle */}
+              <button
+                onClick={() => {
+                  const edge = selectedEdges[0];
+                  const newAnimated = !edge.animated;
+                  setEdges(eds => eds.map(e => e.id === edge.id ? { ...e, animated: newAnimated } : e));
+                  saveToHistory();
+                }}
+                className={`p-1.5 rounded ${selectedEdges[0].animated ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100 text-gray-600'}`}
+                title="Toggle Animation"
+              >
+                <Wand2 size={16} />
+              </button>
+
+              {/* Edge Type Selector */}
+              <select
+                value={selectedEdges[0].type || 'default'}
+                onChange={(e) => {
+                  const edge = selectedEdges[0];
+                  setEdges(eds => eds.map(ed => ed.id === edge.id ? { ...ed, type: e.target.value } : ed));
+                  saveToHistory();
+                }}
+                className="text-sm border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="default">Bezier</option>
+                <option value="straight">Straight</option>
+                <option value="step">Step</option>
+                <option value="smoothstep">Smooth Step</option>
+              </select>
+
+              {/* Label Input */}
+              <input
+                type="text"
+                value={selectedEdges[0].label as string || ''}
+                onChange={(e) => {
+                  const edge = selectedEdges[0];
+                  setEdges(eds => eds.map(ed => ed.id === edge.id ? { ...ed, label: e.target.value } : ed));
+                }}
+                onBlur={saveToHistory}
+                placeholder="Label..."
+                className="text-sm border rounded px-2 py-1 w-32 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+
+              <div className="w-px h-4 bg-gray-200 mx-1" />
+
+              {/* Delete Button */}
+              <button
+                onClick={() => {
+                  const edge = selectedEdges[0];
+                  setEdges(eds => eds.filter(e => e.id !== edge.id));
+                  setSelectedEdges([]);
+                  saveToHistory();
+                }}
+                className="p-1.5 hover:bg-red-100 text-red-600 rounded"
+                title="Delete Edge"
+              >
+                <Trash2 size={16} />
+              </button>
+            </Panel>
+          )}
+
           {/* Node Toolbars */}
           {nodes.map(node => (
             <NodeToolbar
@@ -707,9 +774,23 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
             >
               <div className="flex items-center gap-1 bg-white rounded shadow-lg border px-2 py-1">
                 <button
-                  onClick={() => startTextEditing(node.id)}
+                  onClick={() => {
+                    const data = node.data as unknown as CustomNodeData;
+                    setEditingNodeId(node.id);
+                    setEditModal({
+                      isOpen: true,
+                      nodeData: {
+                        title: data.title,
+                        content: data.content,
+                        iconPath: data.iconPath,
+                        backgroundColor: data.backgroundColor,
+                        borderColor: data.borderColor,
+                        textColor: data.textColor
+                      }
+                    });
+                  }}
                   className="p-1 hover:bg-gray-100 rounded"
-                  title="Edit Text"
+                  title="Edit Node"
                 >
                   <Edit3 size={12} />
                 </button>
@@ -729,50 +810,6 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
           ))}
         </ReactFlow>
       </div>
-
-      {/* Text Editing Modal */}
-      {isTextEditing && editingNodeId && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-96">
-            <h3 className="text-lg font-semibold mb-4">Edit Node Text</h3>
-            <input
-              type="text"
-              defaultValue={(nodes.find(n => n.id === editingNodeId)?.data as unknown as CustomNodeData)?.title || ''}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              placeholder="Enter node text..."
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  updateNodeText(editingNodeId, e.currentTarget.value);
-                } else if (e.key === 'Escape') {
-                  setIsTextEditing(false);
-                  setEditingNodeId(null);
-                }
-              }}
-            />
-            <div className="flex gap-2 mt-4">
-              <button
-                onClick={(e) => {
-                  const input = e.currentTarget.parentElement?.previousElementSibling as HTMLInputElement;
-                  updateNodeText(editingNodeId, input.value);
-                }}
-                className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
-              >
-                Save
-              </button>
-              <button
-                onClick={() => {
-                  setIsTextEditing(false);
-                  setEditingNodeId(null);
-                }}
-                className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Context Menu */}
       {contextMenu && (

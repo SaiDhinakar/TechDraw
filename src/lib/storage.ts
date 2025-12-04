@@ -4,6 +4,7 @@ export interface Diagram {
   id: string;
   name: string;
   description?: string;
+  diagramType?: 'container' | 'architecture' | 'flowchart';
   nodes: any[];
   edges: any[];
   viewport: {
@@ -97,19 +98,19 @@ class StorageManager {
     if (this.fallbackToLocalStorage) {
       const diagrams = this.getLocalStorageArray('diagrams');
       const existingIndex = diagrams.findIndex((d: Diagram) => d.id === diagram.id);
-      
+
       if (existingIndex >= 0) {
         diagrams[existingIndex] = { ...diagramWithTimestamps, createdAt: diagrams[existingIndex].createdAt };
       } else {
         diagrams.push(diagramWithTimestamps);
       }
-      
+
       localStorage.setItem('diagrams', JSON.stringify(diagrams));
       return diagramWithTimestamps;
     }
 
     if (!this.db) throw new Error('Database not initialized');
-    
+
     const existingDiagram = await this.db.get(STORES.DIAGRAMS, diagram.id);
     const finalDiagram = {
       ...diagramWithTimestamps,
@@ -161,13 +162,13 @@ class StorageManager {
     if (this.fallbackToLocalStorage) {
       const icons = this.getLocalStorageArray('icons');
       const existingIndex = icons.findIndex((i: Icon) => i.id === icon.id);
-      
+
       if (existingIndex >= 0) {
         icons[existingIndex] = iconWithTimestamp;
       } else {
         icons.push(iconWithTimestamp);
       }
-      
+
       localStorage.setItem('icons', JSON.stringify(icons));
       return iconWithTimestamp;
     }
@@ -288,7 +289,7 @@ class StorageManager {
     }
 
     if (!this.db) throw new Error('Database not initialized');
-    
+
     const transaction = this.db.transaction([STORES.DIAGRAMS, STORES.ICONS, STORES.PREFERENCES], 'readwrite');
     await Promise.all([
       transaction.objectStore(STORES.DIAGRAMS).clear(),

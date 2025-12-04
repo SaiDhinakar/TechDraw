@@ -7,6 +7,9 @@ export interface NodeEditData {
   title: string;
   content: string;
   iconPath?: string;
+  backgroundColor?: string;
+  borderColor?: string;
+  textColor?: string;
 }
 
 export interface EditModalProps {
@@ -75,33 +78,89 @@ export const EditModal: React.FC<EditModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-4 space-y-4 overflow-y-auto max-h-[calc(90vh-140px)]">
-          {/* Title Input */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Title
-            </label>
-            <input
-              type="text"
-              value={formData.title}
-              onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter node title"
-            />
+        <div className="p-4 space-y-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+          {/* Text Section */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium text-gray-900 border-b pb-2">Content</h3>
+            {/* Title Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Title
+              </label>
+              <input
+                type="text"
+                value={formData.title}
+                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter node title"
+              />
+            </div>
+
+            {/* Content Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Content
+              </label>
+              <textarea
+                value={formData.content}
+                onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
+                placeholder="Enter node content"
+              />
+            </div>
           </div>
 
-          {/* Content Input */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Content
-            </label>
-            <textarea
-              value={formData.content}
-              onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-              rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
-              placeholder="Enter node content"
-            />
+          {/* Appearance Section */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium text-gray-900 border-b pb-2">Appearance</h3>
+
+            <div className="grid grid-cols-3 gap-4">
+              {/* Background Color */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Background
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={formData.backgroundColor || '#ffffff'}
+                    onChange={(e) => setFormData(prev => ({ ...prev, backgroundColor: e.target.value }))}
+                    className="h-8 w-full cursor-pointer rounded border border-gray-300"
+                  />
+                </div>
+              </div>
+
+              {/* Border Color */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Border
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={formData.borderColor || '#e5e7eb'}
+                    onChange={(e) => setFormData(prev => ({ ...prev, borderColor: e.target.value }))}
+                    className="h-8 w-full cursor-pointer rounded border border-gray-300"
+                  />
+                </div>
+              </div>
+
+              {/* Text Color */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Text
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={formData.textColor || '#1f2937'}
+                    onChange={(e) => setFormData(prev => ({ ...prev, textColor: e.target.value }))}
+                    className="h-8 w-full cursor-pointer rounded border border-gray-300"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Icon Selection */}
@@ -113,9 +172,9 @@ export const EditModal: React.FC<EditModalProps> = ({
               {/* Current Icon Preview */}
               <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-md">
                 {formData.iconPath ? (
-                  <img 
-                    src={formData.iconPath} 
-                    alt="Current icon" 
+                  <img
+                    src={formData.iconPath}
+                    alt="Current icon"
                     className="w-8 h-8 object-contain"
                   />
                 ) : (
@@ -159,8 +218,8 @@ export const EditModal: React.FC<EditModalProps> = ({
                           className="p-2 border border-gray-200 rounded hover:border-blue-500 hover:bg-blue-50 transition-colors"
                           title={icon.name}
                         >
-                          <img 
-                            src={icon.path} 
+                          <img
+                            src={icon.path}
                             alt={icon.name}
                             className="w-8 h-8 object-contain mx-auto"
                           />

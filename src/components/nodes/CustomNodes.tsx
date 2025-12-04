@@ -18,35 +18,29 @@ export const CustomNode: React.FC<NodeProps> = memo(({ data, id, selected }) => 
   // Type assertion for data
   const nodeData = data as unknown as CustomNodeData;
   const [isResizing, setIsResizing] = useState(false);
-  const [editingTitle, setEditingTitle] = useState(false);
-  const [editingContent, setEditingContent] = useState(false);
   const nodeRef = useRef<HTMLDivElement>(null);
   const resizeRef = useRef<HTMLDivElement>(null);
 
   const handleNodeClick = useCallback((e: React.MouseEvent) => {
-    // Only show context menu on direct node click, not on resize handles or editable areas
+    // Only show context menu on direct node click, not on resize handles
     if (resizeRef.current?.contains(e.target as Node)) {
       return;
     }
-    
-    if (editingTitle || editingContent) {
-      return;
-    }
-    
+
     e.preventDefault();
     e.stopPropagation();
-    
+
     if (nodeData.onShowContextMenu) {
       nodeData.onShowContextMenu(id, e.clientX, e.clientY);
     }
-  }, [nodeData, id, editingTitle, editingContent]);
+  }, [nodeData, id]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (resizeRef.current && resizeRef.current.contains(e.target as Node)) {
       e.preventDefault();
       e.stopPropagation();
       setIsResizing(true);
-      
+
       const startX = e.clientX;
       const startY = e.clientY;
       const startWidth = nodeData.width || 200;
@@ -55,7 +49,7 @@ export const CustomNode: React.FC<NodeProps> = memo(({ data, id, selected }) => 
       const handleMouseMove = (moveEvent: MouseEvent) => {
         const newWidth = Math.max(150, startWidth + (moveEvent.clientX - startX));
         const newHeight = Math.max(100, startHeight + (moveEvent.clientY - startY));
-        
+
         // Dispatch custom event to update node data
         window.dispatchEvent(new CustomEvent('updateNodeSize', {
           detail: { id, width: newWidth, height: newHeight }
@@ -73,28 +67,18 @@ export const CustomNode: React.FC<NodeProps> = memo(({ data, id, selected }) => 
     }
   }, [nodeData.width, nodeData.height, id]);
 
-  const handleTitleEdit = useCallback((newTitle: string) => {
-    window.dispatchEvent(new CustomEvent('updateNodeData', {
-      detail: { id, updates: { title: newTitle } }
-    }));
-  }, [id]);
 
-  const handleContentEdit = useCallback((newContent: string) => {
-    window.dispatchEvent(new CustomEvent('updateNodeData', {
-      detail: { id, updates: { content: newContent } }
-    }));
-  }, [id]);
 
   return (
-    <div 
+    <div
       ref={nodeRef}
       className={`
         bg-white border-2 rounded-lg shadow-lg transition-all duration-200 relative group cursor-pointer
         ${selected ? 'border-blue-500 shadow-xl' : 'border-gray-200 hover:border-gray-300'}
         ${isResizing ? 'select-none' : ''}
       `}
-      style={{ 
-        width: nodeData.width || 200, 
+      style={{
+        width: nodeData.width || 200,
         height: nodeData.height || 120,
         minWidth: 150,
         minHeight: 100,
@@ -104,6 +88,7 @@ export const CustomNode: React.FC<NodeProps> = memo(({ data, id, selected }) => 
       }}
       onMouseDown={handleMouseDown}
       onClick={handleNodeClick}
+      title="Double-click to edit"
     >
       {/* Connection Handles */}
       <Handle
@@ -128,13 +113,13 @@ export const CustomNode: React.FC<NodeProps> = memo(({ data, id, selected }) => 
       />
 
       {/* Node Content */}
-      <div className="flex items-start gap-3 p-3 h-full">
+      <div className="flex items-start gap-3 p-3 h-full pointer-events-none">
         {/* Icon */}
         {nodeData.iconPath && (
           <div className="flex-shrink-0 mt-1">
-            <img 
-              src={nodeData.iconPath} 
-              alt="Node icon" 
+            <img
+              src={nodeData.iconPath}
+              alt="Node icon"
               className="w-8 h-8 object-contain"
             />
           </div>
@@ -143,53 +128,12 @@ export const CustomNode: React.FC<NodeProps> = memo(({ data, id, selected }) => 
         {/* Content */}
         <div className="flex-1 min-w-0 space-y-2">
           {/* Title */}
-          <div
-            className={`
-              font-semibold text-sm leading-tight rounded px-2 py-1 transition-colors
-              overflow-hidden text-ellipsis whitespace-nowrap
-              ${editingTitle ? 'bg-blue-50 border border-blue-300 whitespace-normal' : 'hover:bg-gray-50'}
-            `}
-            contentEditable
-            suppressContentEditableWarning
-            onFocus={() => setEditingTitle(true)}
-            onBlur={(e) => {
-              setEditingTitle(false);
-              handleTitleEdit(e.currentTarget.textContent || '');
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                e.currentTarget.blur();
-              }
-            }}
-          >
+          <div className="font-semibold text-sm leading-tight overflow-hidden text-ellipsis whitespace-nowrap">
             {nodeData.title}
           </div>
 
           {/* Content */}
-          <div
-            className={`
-              text-xs text-gray-600 leading-relaxed rounded px-2 py-1 transition-colors
-              overflow-hidden line-clamp-3 break-words
-              ${editingContent ? 'bg-blue-50 border border-blue-300 overflow-auto' : 'hover:bg-gray-50'}
-            `}
-            contentEditable
-            suppressContentEditableWarning
-            onFocus={() => setEditingContent(true)}
-            onBlur={(e) => {
-              setEditingContent(false);
-              handleContentEdit(e.currentTarget.textContent || '');
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && e.shiftKey) {
-                // Allow line breaks with Shift+Enter
-                return;
-              } else if (e.key === 'Enter') {
-                e.preventDefault();
-                e.currentTarget.blur();
-              }
-            }}
-          >
+          <div className="text-xs opacity-80 leading-relaxed overflow-hidden line-clamp-3 break-words">
             {nodeData.content}
           </div>
         </div>
@@ -232,11 +176,11 @@ export const IconNode: React.FC<NodeProps> = memo(({ data, selected }) => {
     md: { container: 'w-16 h-16', icon: 'w-12 h-12' },
     lg: { container: 'w-20 h-20', icon: 'w-16 h-16' }
   };
-  
+
   const size = sizes[nodeData.size || 'md'];
 
   return (
-    <div 
+    <div
       className={`
         ${size.container} bg-white border-2 rounded-lg shadow-sm transition-all duration-200
         flex items-center justify-center cursor-grab active:cursor-grabbing
@@ -253,9 +197,9 @@ export const IconNode: React.FC<NodeProps> = memo(({ data, selected }) => {
         position={Position.Bottom}
         className="w-2 h-2 !bg-blue-500 !border !border-white"
       />
-      
-      <img 
-        src={nodeData.iconPath} 
+
+      <img
+        src={nodeData.iconPath}
         alt={nodeData.iconName}
         className={`${size.icon} object-contain`}
         draggable={false}

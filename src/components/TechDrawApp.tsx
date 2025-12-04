@@ -54,6 +54,7 @@ export const TechDrawApp: React.FC = () => {
       id: generateId(),
       name: 'Untitled Diagram',
       description: '',
+      diagramType: 'container', // Default type
       nodes: [],
       edges: [],
       viewport: { x: 0, y: 0, zoom: 1 },
@@ -100,11 +101,12 @@ export const TechDrawApp: React.FC = () => {
     }
   };
 
-  const handleAIGeneration = async (result: DiagramGenerationResponse) => {
+  const handleAIGeneration = async (result: DiagramGenerationResponse, diagramType?: string) => {
     const newDiagram: Diagram = {
       id: generateId(),
       name: result.title,
       description: result.description,
+      diagramType: (diagramType || 'container') as 'container' | 'architecture' | 'flowchart',
       nodes: result.nodes,
       edges: result.edges,
       viewport: { x: 0, y: 0, zoom: 1 },
@@ -258,10 +260,10 @@ export const TechDrawApp: React.FC = () => {
             </button>
             <button
               onClick={createNewDiagram}
-              className="flex items-center gap-2 px-3 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
+              className="flex items-center gap-2 px-3 py-2 bg-primary-600 text-white rounded-md hover:bg-gray-100"
             >
-              <Plus size={16} />
-              <span className="hidden sm:block">New Diagram</span>
+              <Plus size={16} color="black" />
+              <span className="text-gray-500 hidden sm:block">New Diagram</span>
             </button>
           </div>
         </div>
@@ -330,10 +332,10 @@ const DiagramsTab: React.FC<DiagramsTabProps> = ({
         </div>
         <button
           onClick={onCreateNew}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
+          className="w-full flex items-center justify-center gap-2 px-4 py-2 border-2 border-gray-300 bg-primary-600 text-white rounded-md hover:bg-primary-700"
         >
-          <Plus size={16} />
-          New Diagram
+          <Plus size={16} color="black" />
+          <h3 className="text-gray-500">New Diagram</h3>
         </button>
       </div>
 

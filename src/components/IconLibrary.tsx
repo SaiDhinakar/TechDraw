@@ -10,11 +10,11 @@ interface IconLibraryProps {
   compact?: boolean;
 }
 
-export const IconLibrary: React.FC<IconLibraryProps> = ({ 
+export const IconLibrary: React.FC<IconLibraryProps> = ({
   onIconDragStart,
-  onIconSelect, 
+  onIconSelect,
   selectedIconId,
-  compact = false 
+  compact = false
 }) => {
   const [icons, setIcons] = useState<PublicIcon[]>([]);
   const [filteredIcons, setFilteredIcons] = useState<PublicIcon[]>([]);
@@ -49,34 +49,34 @@ export const IconLibrary: React.FC<IconLibraryProps> = ({
       setFilteredIcons(icons);
       return;
     }
-    
+
     const query = searchQuery.toLowerCase().trim();
-    
+
     const filtered = icons.filter(icon => {
       const iconName = icon.name.toLowerCase();
-      
+
       // Direct match
       if (iconName.includes(query)) {
         return true;
       }
-      
+
       // Try variations with spaces and dashes
       const queryWithSpaces = query.replace(/-/g, ' ').replace(/_/g, ' ');
       const queryWithDashes = query.replace(/\s+/g, '-').replace(/_/g, '-');
       const queryWithUnderscores = query.replace(/\s+/g, '_').replace(/-/g, '_');
-      
+
       const nameWithSpaces = iconName.replace(/-/g, ' ').replace(/_/g, ' ');
       const nameWithDashes = iconName.replace(/\s+/g, '-').replace(/_/g, '-');
       const nameWithUnderscores = iconName.replace(/\s+/g, '_').replace(/-/g, '_');
-      
+
       return nameWithSpaces.includes(queryWithSpaces) ||
-             nameWithDashes.includes(queryWithDashes) ||
-             nameWithUnderscores.includes(queryWithUnderscores) ||
-             iconName.includes(queryWithSpaces) ||
-             iconName.includes(queryWithDashes) ||
-             iconName.includes(queryWithUnderscores);
+        nameWithDashes.includes(queryWithDashes) ||
+        nameWithUnderscores.includes(queryWithUnderscores) ||
+        iconName.includes(queryWithSpaces) ||
+        iconName.includes(queryWithDashes) ||
+        iconName.includes(queryWithUnderscores);
     });
-    
+
     setFilteredIcons(filtered);
   };
 
@@ -85,28 +85,46 @@ export const IconLibrary: React.FC<IconLibraryProps> = ({
     if (!files || files.length === 0) return;
 
     setUploading(true);
-    
+
     try {
-      // In a real app, you'd upload to a server
-      // For now, just show a message
-      const validFiles = Array.from(files).filter(file => 
-        file.type.startsWith('image/') && 
-        (file.name.endsWith('.png') || file.name.endsWith('.svg') || 
-         file.name.endsWith('.jpg') || file.name.endsWith('.jpeg'))
+      const formData = new FormData();
+      const validFiles = Array.from(files).filter(file =>
+        file.type.startsWith('image/')
       );
-      
-      if (validFiles.length > 0) {
-        alert(`Upload functionality not implemented yet. Would upload ${validFiles.length} icon(s). Please manually add icons to the public/icons folder and refresh.`);
-      } else {
-        alert('Please select valid image files (.png, .svg, .jpg, .jpeg)');
+
+      if (validFiles.length === 0) {
+        alert('Please select valid image files');
+        return;
+      }
+
+      validFiles.forEach(file => {
+        formData.append('icons', file);
+      });
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Refresh icons from the server (which now has updated manifest)
+        await publicIconService.loadIcons();
+        await loadIcons();
+        alert(`Successfully uploaded ${validFiles.length} icons!`);
       }
     } catch (error) {
       console.error('Upload failed:', error);
-      alert('Upload failed. Please try again.');
+      alert('Failed to upload icons');
     } finally {
       setUploading(false);
-      if (event.target) {
-        event.target.value = '';
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
       }
     }
   };
@@ -120,7 +138,7 @@ export const IconLibrary: React.FC<IconLibraryProps> = ({
       fileName: icon.fileName
     }));
     event.dataTransfer.effectAllowed = 'move';
-    
+
     onIconDragStart?.(icon, event);
   };
 
@@ -220,11 +238,11 @@ export const IconLibrary: React.FC<IconLibraryProps> = ({
           </div>
         ) : (
           <div className={cn(
-            viewMode === 'grid' 
-              ? 'grid gap-3' 
+            viewMode === 'grid'
+              ? 'grid gap-3'
               : 'space-y-2',
-            compact 
-              ? 'grid-cols-4' 
+            compact
+              ? 'grid-cols-4'
               : 'grid-cols-3 lg:grid-cols-4'
           )}>
             {filteredIcons.map(icon => (
@@ -254,10 +272,10 @@ interface IconItemProps {
   compact?: boolean;
 }
 
-const IconItem: React.FC<IconItemProps> = ({ 
-  icon, 
-  viewMode, 
-  isSelected = false, 
+const IconItem: React.FC<IconItemProps> = ({
+  icon,
+  viewMode,
+  isSelected = false,
   onDragStart,
   onSelect,
   compact = false
@@ -288,7 +306,7 @@ const IconItem: React.FC<IconItemProps> = ({
             loading="lazy"
           />
         </div>
-        
+
         {!compact && (
           <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white text-xs p-2 rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity">
             <div className="truncate">{icon.name}</div>
@@ -325,7 +343,7 @@ const IconItem: React.FC<IconItemProps> = ({
           loading="lazy"
         />
       </div>
-      
+
       <div className="flex-1 min-w-0">
         <div className="font-medium text-sm truncate">{icon.name}</div>
         <div className="text-xs text-gray-500 truncate">{icon.fileName}</div>
