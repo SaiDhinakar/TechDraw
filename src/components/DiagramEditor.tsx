@@ -445,16 +445,16 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
   };
 
   // Update node text
-  const updateNodeText = (nodeId: string, newText: string) => {
-    saveToHistory();
-    setNodes(nds => nds.map(node =>
-      node.id === nodeId
-        ? { ...node, data: { ...node.data, title: newText } }
-        : node
-    ));
-    setIsTextEditing(false);
-    setEditingNodeId(null);
-  };
+  // const updateNodeText = (nodeId: string, newText: string) => {
+  //   saveToHistory();
+  //   setNodes(nds => nds.map(node =>
+  //     node.id === nodeId
+  //       ? { ...node, data: { ...node.data, title: newText } }
+  //       : node
+  //   ));
+  //   setIsTextEditing(false);
+  //   setEditingNodeId(null);
+  // };
 
   // Handle node selection
   const onSelectionChange = useCallback((selection: { nodes: Node[]; edges: Edge[] }) => {
