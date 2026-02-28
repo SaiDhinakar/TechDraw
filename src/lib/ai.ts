@@ -330,7 +330,7 @@ Final Instruction:
     }
 
     const completion = await this.groqClient.chat.completions.create({
-      model: model || 'llama-3.1-70b-versatile',
+      model: model || 'openai/gpt-oss-120b',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.7,
       max_tokens: 2000,
@@ -344,7 +344,7 @@ Final Instruction:
       throw new Error('Gemini client not initialized');
     }
 
-    const modelInstance = this.geminiClient.getGenerativeModel({ model: model || 'gemini-2.5-pro' });
+    const modelInstance = this.geminiClient.getGenerativeModel({ model: model || 'gemini-3.1-pro-preview' });
     const result = await modelInstance.generateContent(prompt);
     const response = await result.response;
     return response.text();
