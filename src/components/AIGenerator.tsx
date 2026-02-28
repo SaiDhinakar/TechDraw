@@ -58,8 +58,8 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({
   React.useEffect(() => {
     const defaultModels = {
       openrouter: 'anthropic/claude-3.5-sonnet',
-      groq: 'llama-3.1-70b-versatile',
-      gemini: 'gemini-2.0-flash'
+      groq: 'openai/gpt-oss-120b',
+      gemini: 'gemini-3.1-pro-preview'
     };
     setModel(defaultModels[provider]);
   }, [provider]);
